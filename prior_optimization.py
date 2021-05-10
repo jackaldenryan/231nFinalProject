@@ -1,4 +1,4 @@
-from alexnet import model as alexnet
+from clipv import model as clip
 from biggan import model as biggan
 import torch
 import torchvision
@@ -54,7 +54,7 @@ class GANStack(torch.nn.Module):
         return x
 
 
-stack = GANStack(biggan, alexnet)
+stack = GANStack(biggan, clip.visual)
 
 
 def create_optimized_image(target: torch.nn.Module, channel: int, n_steps: int) -> torch.Tensor:

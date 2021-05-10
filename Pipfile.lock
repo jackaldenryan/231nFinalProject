@@ -1,7 +1,11 @@
 {
     "_meta": {
         "hash": {
+<<<<<<< HEAD
             "sha256": "811b918fad6983f47f70d15d3e898366f02087d54bb7b47ad1ceefc2720423fa"
+=======
+            "sha256": "1fed14020436b4ac56d29b87eb50810f7e425d01c9f96d4a60c5e0902b77c548"
+>>>>>>> 4cd14d8... Try using clip (probably not worth)
         },
         "pipfile-spec": 6,
         "requires": {
@@ -179,7 +183,11 @@
         "captum": {
             "editable": true,
             "git": "https://github.com/pytorch/captum.git",
+<<<<<<< HEAD
             "ref": "6e3eb60f02b969ade99e21a0f60c8fec1fe73650"
+=======
+            "ref": "af931a2d99e83221836a657d50295a429caa3c67"
+>>>>>>> 4cd14d8... Try using clip (probably not worth)
         },
         "certifi": {
             "hashes": [
@@ -246,6 +254,13 @@
             "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4'",
             "version": "==7.1.2"
         },
+<<<<<<< HEAD
+=======
+        "clip": {
+            "git": "https://github.com/openai/CLIP.git",
+            "ref": "cfcffb90e69f37bf2ff1e988237a0fbe41f33c04"
+        },
+>>>>>>> 4cd14d8... Try using clip (probably not worth)
         "colorama": {
             "hashes": [
                 "sha256:5941b2b48a20143d2267e95b1c2a7603ce057ee39fd88e7329b0c292aa16869b",
@@ -292,6 +307,16 @@
             ],
             "version": "==3.0.12"
         },
+<<<<<<< HEAD
+=======
+        "ftfy": {
+            "hashes": [
+                "sha256:9eb68533eb2a6124e96ed7f63049e6c519194fda3fae92629b5e0b5753cb2c8f"
+            ],
+            "markers": "python_version >= '3.6'",
+            "version": "==6.0.1"
+        },
+>>>>>>> 4cd14d8... Try using clip (probably not worth)
         "google-api-core": {
             "hashes": [
                 "sha256:099762d4b4018cd536bcf85136bf337957da438807572db52f21dc61251be089",
@@ -1444,6 +1469,7 @@
         },
         "torch": {
             "hashes": [
+<<<<<<< HEAD
                 "sha256:1388b30fbd262c1a053d6c9ace73bb0bd8f5871b4892b6f3e02d1d7bc9768563",
                 "sha256:16f2630d9604c4ee28ea7d6e388e2264cd7bc6031c6ecd796bae3f56b5efa9a3",
                 "sha256:225ee4238c019b28369c71977327deeeb2bd1c6b8557e6fcf631b8866bdc5447",
@@ -1503,6 +1529,37 @@
             ],
             "index": "pypi",
             "version": "==0.9.1"
+=======
+                "sha256:2e49cac969976be63117004ee00d0a3e3dd4ea662ad77383f671b8992825de1a",
+                "sha256:38d67f4fb189a92a977b2c0a38e4f6dd413e0bf55aa6d40004696df7e40a71ff",
+                "sha256:422e64e98d0e100c360993819d0307e5d56e9517b26135808ad68984d577d75a",
+                "sha256:5d76c255a41484c1d41a9ff570b9c9f36cb85df9428aa15a58ae16ac7cfc2ea6",
+                "sha256:6652a767a0572ae0feb74ad128758e507afd3b8396b6e7f147e438ba8d4c6f63",
+                "sha256:a3793dcceb12b1e2281290cca1277c5ce86ddfd5bf044f654285a4d69057aea7",
+                "sha256:af464a6f4314a875035e0c4c2b07517599704b214634f4ed3ad2e748c5ef291f",
+                "sha256:d241c3f1c4d563e4ba86f84769c23e12606db167ee6f674eedff6d02901462e3",
+                "sha256:dd2fc6880c95e836960d86efbbc7f63d3287f2e1893c51d31f96dbfe02f0d73e",
+                "sha256:de84b4166e3f7335eb868b51d3bbd909ec33828af27290b4171bce832a55be3c",
+                "sha256:e000b94be3aa58ad7f61e7d07cf379ea9366cf6c6874e68bd58ad0bdc537b3a7",
+                "sha256:f0aaf657145533824b15f2fd8fde8f8c67fe6c6281088ef588091f03fad90243"
+            ],
+            "index": "pypi",
+            "version": "==1.7.1"
+        },
+        "torchvision": {
+            "hashes": [
+                "sha256:1bd58acc3366ec02266aae56a7a752d43ef07de4a6ba420c4f907d0c9168bb8c",
+                "sha256:24db8f4c3d812a032273f68563ad5dbd724f5bfbed523d0c6dce8cede26bb153",
+                "sha256:86fae370d222f76ad57c57c3bee03f78b8db727743bfb4c1559a3d395159cea8",
+                "sha256:951239b5fcb911dbf78c1385d677f5f48c7a1b12859e3d3ec287562821b17cf2",
+                "sha256:976750a49db2e23dc5a1ed0b5c31f7af51ed2702eee410ee09ef985c3a3e48cf",
+                "sha256:afb76a66b9b0693f758a881a2bf333ed97e3c0c3f15a413c4f49d8dd8bd21307",
+                "sha256:b068f6bcbe91bdd34dda0a39e8a26392add45a3be82543f6dd523b76484fb56f",
+                "sha256:cd8817e9197fc60ebae37162a445db90bbf35591314a5767ad3d1490b5d65b0f"
+            ],
+            "index": "pypi",
+            "version": "==0.8.2"
+>>>>>>> 4cd14d8... Try using clip (probably not worth)
         },
         "tornado": {
             "hashes": [
