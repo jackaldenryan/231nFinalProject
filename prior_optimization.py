@@ -13,13 +13,15 @@ import captum.optim as optimviz
 class BadInputParametizer(torch.nn.Module):
     def __init__(self):
         super(BadInputParametizer, self).__init__()
-        v = torch.tensor(truncated_noise_sample(
-            truncation=0.4, batch_size=1), requires_grad=True).to("cuda")
-        class_vec = biggan.embeddings(torch.tensor(one_hot_from_names(
-            ["coffee"], batch_size=1), requires_grad=True).to("cuda"))
-        self.v = torch.nn.Parameter(torch.cat((v, class_vec), dim=1))
 
-        print(self.v.shape)
+        # (1, 256) is shape of BigGAN input for a single batch
+        # 128 for noise vector, 128 for class embedding (but we just treat it
+        # as an opaque blob here)
+        noise = truncated_noise_sample(batch_size=1, dim_z=256)
+
+        noise_t = torch.tensor(noise, requires_grad=True).to("cuda")
+
+        self.v = torch.nn.Parameter(noise_t)
 
     def forward(self):
         return self.v
@@ -32,15 +34,24 @@ class GANStack(torch.nn.Module):
         super(GANStack, self).__init__()
         self.gan = gan
         self.resize = torchvision.transforms.Resize((224, 224))
+        self.regularization = torch.nn.Sequential(
+            torch.nn.ReflectionPad2d(4),
+            optimviz.transforms.RandomSpatialJitter(8),
+            optimviz.transforms.RandomScale(
+                scale=(1, 0.975, 1.025, 0.95, 1.05)),
+            torchvision.transforms.RandomRotation(degrees=(-5, 5)),
+            optimviz.transforms.RandomSpatialJitter(2),
+        )
         self.model = model
 
-    def forward(self, noise_vector):
+    def forward(self, x):
         truncation = 0.4
-        output = self.gan.generator(noise_vector, truncation=truncation)
-        output = self.resize(output)
-        output = self.model(output)
+        x = self.gan.generator(x, truncation=truncation)
+        x = self.resize(x)
+        x = self.regularization(x)
+        x = self.model(x)
 
-        return output
+        return x
 
 
 stack = GANStack(biggan, alexnet)
@@ -48,15 +59,15 @@ stack = GANStack(biggan, alexnet)
 
 def create_optimized_image(target: torch.nn.Module, channel: int, n_steps: int) -> torch.Tensor:
     """
-    :returns: (1, 256) input ready for biggan insertion
+    :returns: (1, 256) input ready for biggan insertion, loss_history
     """
     input = BadInputParametizer()
     loss_fn = optimviz.loss.ChannelActivation(target, channel)
     io = optimviz.InputOptimization(
         stack, loss_fn, input, torch.nn.Identity())
-    io.optimize(optimviz.optimization.n_steps(128, True))
+    history = io.optimize(optimviz.optimization.n_steps(n_steps, True))
 
-    return input.v
+    return input.v, history
 
 
 def display_optimized_image(vec: torch.Tensor):
