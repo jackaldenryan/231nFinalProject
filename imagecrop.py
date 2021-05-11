@@ -13,8 +13,13 @@ def crop(path, input, height, width, k, page, area):
             k +=1
 
 path = 'inception_dset_eg'
+
+#width and height of imagenet dataset examples from openai microscope
 height = 80
 width = 80
+
+#width and height of feature visualizations from openai microscope
+
 k = 0
 area = (0, 0, width, height)
 

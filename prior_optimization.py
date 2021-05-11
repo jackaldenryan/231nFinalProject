@@ -1,11 +1,11 @@
-from alexnet import model as alexnet
 from biggan import model as biggan
+from inceptionv1 import model as inceptionv1
 import torch
 import torchvision
 from pytorch_pretrained_biggan import (one_hot_from_names, truncated_noise_sample,
                                        convert_to_images)
 import captum.optim as optimviz
-
+import PIL
 
 # A very basic class that just wraps a single noise vector
 
@@ -54,10 +54,10 @@ class GANStack(torch.nn.Module):
         return x
 
 
-stack = GANStack(biggan, alexnet)
+stack = GANStack(biggan, inceptionv1)
 
 
-def create_optimized_image(target: torch.nn.Module, channel: int, n_steps: int) -> torch.Tensor:
+def create_optimized_image(target: torch.nn.Module, channel: int, n_steps: int, lr: float = 0.025) -> torch.Tensor:
     """
     :returns: (1, 256) input ready for biggan insertion, loss_history
     """
@@ -65,12 +65,16 @@ def create_optimized_image(target: torch.nn.Module, channel: int, n_steps: int) 
     loss_fn = optimviz.loss.ChannelActivation(target, channel)
     io = optimviz.InputOptimization(
         stack, loss_fn, input, torch.nn.Identity())
-    history = io.optimize(optimviz.optimization.n_steps(n_steps, True))
+    history = io.optimize(optimviz.optimization.n_steps(n_steps, True), lr=lr)
 
     return input.v, history
 
 
 def display_optimized_image(vec: torch.Tensor):
+    display(input_to_img(vec))
+
+
+def input_to_img(vec: torch.Tensor) -> PIL.Image:
     truncation = 0.4
     # Generate an image
     with torch.no_grad():
@@ -80,4 +84,4 @@ def display_optimized_image(vec: torch.Tensor):
     output = output.to('cpu')
 
     imgs = convert_to_images(output)
-    display(imgs[0])
+    return imgs[0]
