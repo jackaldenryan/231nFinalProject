@@ -188,4 +188,8 @@ Thumbs.db
 .history
 .ionide
 
+# Dataset examples and feature visualization images
+inception_feature_viz
+inception_dset_eg
+
 # End of https://www.toptal.com/developers/gitignore/api/python,visualstudiocode,jupyternotebooks,linux
