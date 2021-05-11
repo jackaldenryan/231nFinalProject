@@ -57,6 +57,10 @@ class GANStack(torch.nn.Module):
 stack = GANStack(biggan, inceptionv1)
 
 
+def max_loss_summarize(loss_value: torch.Tensor):
+    return -1 * loss_value.max()
+
+
 def create_optimized_image(target: torch.nn.Module, channel: int, n_steps: int, lr: float = 0.025) -> torch.Tensor:
     """
     :returns: (1, 256) input ready for biggan insertion, loss_history
@@ -65,7 +69,9 @@ def create_optimized_image(target: torch.nn.Module, channel: int, n_steps: int, 
     loss_fn = optimviz.loss.ChannelActivation(target, channel)
     io = optimviz.InputOptimization(
         stack, loss_fn, input, torch.nn.Identity())
-    history = io.optimize(optimviz.optimization.n_steps(n_steps, True), lr=lr)
+    print("Running optim with lr =", lr)
+    history = io.optimize(optimviz.optimization.n_steps(
+        n_steps, True), lr=lr)  # , loss_summarize_fn=max_loss_summarize)
 
     return input.v, history
 
