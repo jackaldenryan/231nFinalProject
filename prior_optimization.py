@@ -6,6 +6,13 @@ from pytorch_pretrained_biggan import (one_hot_from_names, truncated_noise_sampl
                                        convert_to_images)
 import captum.optim as optimviz
 import PIL
+import numpy as np
+import random
+
+# Fix the random seed
+torch.manual_seed(1337)
+np.random.seed(1337)
+random.seed(1337)
 
 # A very basic class that just wraps a single noise vector
 
