@@ -7,31 +7,17 @@ from pytorch_pretrained_biggan import (one_hot_from_names, truncated_noise_sampl
 import captum.optim as optimviz
 import PIL
 import numpy as np
-import random
+from IPython.display import clear_output
 
 # Fix the random seed
-torch.manual_seed(1337)
-np.random.seed(1337)
-random.seed(1337)
+# torch.manual_seed(1337)
+# np.random.seed(1337)
+# random.seed(1337)
+
+truncation = 0.4
 
 # A very basic class that just wraps a single noise vector
 
-
-class BadInputParametizer(torch.nn.Module):
-    def __init__(self):
-        super(BadInputParametizer, self).__init__()
-
-        # (1, 256) is shape of BigGAN input for a single batch
-        # 128 for noise vector, 128 for class embedding (but we just treat it
-        # as an opaque blob here)
-        noise = truncated_noise_sample(batch_size=1, dim_z=256)
-
-        noise_t = torch.tensor(noise, requires_grad=True).to("cuda")
-
-        self.v = torch.nn.Parameter(noise_t)
-
-    def forward(self):
-        return self.v
 
 # Literally just a stack of alexnet and biggan on top of each other
 
@@ -40,28 +26,59 @@ class GANStack(torch.nn.Module):
     def __init__(self, gan, model):
         super(GANStack, self).__init__()
         self.gan = gan
-        self.resize = torchvision.transforms.Resize((224, 224))
         self.regularization = torch.nn.Sequential(
-            torch.nn.ReflectionPad2d(4),
+            # torch.nn.ReflectionPad2d(4),
             optimviz.transforms.RandomSpatialJitter(8),
             optimviz.transforms.RandomScale(
                 scale=(1, 0.975, 1.025, 0.95, 1.05)),
             torchvision.transforms.RandomRotation(degrees=(-5, 5)),
             optimviz.transforms.RandomSpatialJitter(2),
         )
+        self.convert = torchvision.transforms.Compose([
+            torchvision.transforms.Resize((224, 224)),
+            torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[
+                0.229, 0.224, 0.225]),
+        ])
         self.model = model
+        self.steps = 0
 
     def forward(self, x):
-        truncation = 0.4
+        if self.steps % 2 == 0:
+            pass  # display_optimized_image(x)
         x = self.gan.generator(x, truncation=truncation)
-        x = self.resize(x)
+        # Gan output has 1x1x256x256, with values between -1 and 1
+        # We need to transform this with InceptionV1's transforms
+        x = ((x + 1.0) / 2.0 * 256)  # Convert to 0-255
+        x = self.convert(x)
         x = self.regularization(x)
         x = self.model(x)
+
+        self.steps += 1
 
         return x
 
 
 stack = GANStack(biggan, inceptionv1)
+
+
+class SimpleInputParametizer(torch.nn.Module):
+    def __init__(self):
+        super(SimpleInputParametizer, self).__init__()
+
+        # (1, 256) is shape of BigGAN input for a single batch
+        # 128 for noise vector, 128 for class embedding (but we just treat it
+        # as an opaque blob here)
+        noise = truncated_noise_sample(batch_size=1, dim_z=128)
+        self.class_vector = torch.nn.Parameter(
+            torch.full((1000,), 1/1000, requires_grad=True).to("cuda"))
+        self.noise_t = torch.nn.Parameter(
+            torch.tensor(noise, requires_grad=True).to("cuda"))
+
+    def forward(self):
+        class_vector = self.class_vector.clamp(0, 1)
+        noise_t = self.noise_t.clamp(-truncation, truncation)
+        return torch.cat([noise_t.squeeze(), stack.gan.embeddings(class_vector)
+                          ])
 
 
 def max_loss_summarize(loss_value: torch.Tensor):
@@ -72,23 +89,23 @@ def create_optimized_image(target: torch.nn.Module, channel: int, n_steps: int, 
     """
     :returns: (1, 256) input ready for biggan insertion, loss_history
     """
-    input = BadInputParametizer()
+    input = SimpleInputParametizer()
     loss_fn = optimviz.loss.ChannelActivation(target, channel)
     io = optimviz.InputOptimization(
         stack, loss_fn, input, torch.nn.Identity())
     print("Running optim with lr =", lr)
     history = io.optimize(optimviz.optimization.n_steps(
-        n_steps, True), lr=lr)  # , loss_summarize_fn=max_loss_summarize)
+        n_steps, True), optimizer=torch.optim.Adam(io.parameters(), lr=lr))  # , loss_summarize_fn=max_loss_summarize)
 
-    return input.v, history
+    return input.forward(), history, input.class_vector
 
 
 def display_optimized_image(vec: torch.Tensor):
+    # clear_output(wait=True)
     display(input_to_img(vec))
 
 
 def input_to_img(vec: torch.Tensor) -> PIL.Image:
-    truncation = 0.4
     # Generate an image
     with torch.no_grad():
         output = stack.gan.generator(vec, truncation=truncation)
