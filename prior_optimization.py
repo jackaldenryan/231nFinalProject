@@ -85,7 +85,7 @@ def max_loss_summarize(loss_value: torch.Tensor):
     return -1 * loss_value.max()
 
 
-def create_optimized_image(target: torch.nn.Module, channel: int, n_steps: int, lr: float = 0.025) -> torch.Tensor:
+def create_optimized_image(target: torch.nn.Module, channel: int, n_steps: int, lr: float = 0.025, verbose: bool = True) -> torch.Tensor:
     """
     :returns: (1, 256) input ready for biggan insertion, loss_history
     """
@@ -95,7 +95,7 @@ def create_optimized_image(target: torch.nn.Module, channel: int, n_steps: int, 
         stack, loss_fn, input, torch.nn.Identity())
     print("Running optim with lr =", lr)
     history = io.optimize(optimviz.optimization.n_steps(
-        n_steps, True), optimizer=torch.optim.Adam(io.parameters(), lr=lr))  # , loss_summarize_fn=max_loss_summarize)
+        n_steps, verbose), optimizer=torch.optim.Adam(io.parameters(), lr=lr))  # , loss_summarize_fn=max_loss_summarize)
 
     return input.forward(), history, input.class_vector
 
