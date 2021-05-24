@@ -12,7 +12,7 @@ python_version = "3.8"
 torch = "*"
 torchvision = "*"
 # Must downgrade because later versions rely on torch.fft.fftfreq which was introduced in 1.8.1, but CLIP requires 1.7.1
-captum = {git = "https://github.com/pytorch/captum.git", editable = true, ref = "af931a2d99e83221836a657d50295a429caa3c67"}
+captum = {git = "https://github.com/pytorch/captum.git", editable = true, ref = "optim-wip"}
 ipykernel = "*"
 autopep8 = "*"
 sklearn = "*"
