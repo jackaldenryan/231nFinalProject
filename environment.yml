@@ -1,0 +1,6 @@
+name: cs231n-final
+channels:
+- nvidia
+dependencies:
+  - cudatoolkit=11.2.72
+  - nvcc_linux-64=11.0

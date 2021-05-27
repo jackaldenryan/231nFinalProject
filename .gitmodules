@@ -1,0 +1,6 @@
+[submodule "captum"]
+	path = captum
+	url = https://github.com/pytorch/captum.git
+[submodule "PyTorch-StudioGAN"]
+	path = discriminators/PyTorch-StudioGAN
+	url = https://github.com/POSTECH-CVLab/PyTorch-StudioGAN
