@@ -4,6 +4,7 @@ from torchvision import transforms
 import torch
 from inceptionv1 import model as inceptionv1
 import collections
+import pickle
 
 imagenet = torchvision.datasets.ImageNet(
     root="/datasets/imagenet", split="train",
@@ -41,7 +42,10 @@ activations = collections.defaultdict(dict)
 
 for idx, batch in enumerate(dataloader):
     images, labels = batch
-    image_indexes = idx + torch.range(0, len(images))
+    count = idx * len(images)
+    if count >= 10_000:
+        break
+    image_indexes = idx + torch.arange(0, len(images))
     images = images.to("cuda")
     labels = labels.to("cuda")
 
@@ -65,4 +69,9 @@ for idx, batch in enumerate(dataloader):
         handle.remove()
 
     if idx % 10 == 0:
-        print("Batch", idx, "idx", image_indexes[0])
+        print("Batch", idx, "idx", image_indexes[0], "count", count)
+
+
+with open("imagenet-activations.pickle", "wb") as f:
+    pickle.dump(activations, f)
+    print("Successfully dumped activations")
