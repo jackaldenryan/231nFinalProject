@@ -21,6 +21,7 @@ ray = "^1.3.0"
 nltk = "^3.6.2"
 captum = { path = "./captum", develop = true }
 seaborn = "^0.11.1"
+pytorch-fid = "^0.2.0"
 
 [tool.poetry.dev-dependencies]
 

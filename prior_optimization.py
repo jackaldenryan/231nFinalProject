@@ -70,34 +70,59 @@ class SimpleInputParametizer(torch.nn.Module):
         # as an opaque blob here)
         noise = truncated_noise_sample(batch_size=1, dim_z=128)
         self.class_vector = torch.nn.Parameter(
-            torch.full((1000,), 1/1000, requires_grad=True).to("cuda"))
+            torch.zeros((128,), requires_grad=True).to("cuda"))
         self.noise_t = torch.nn.Parameter(
             torch.tensor(noise, requires_grad=True).to("cuda"))
 
     def forward(self):
-        class_vector = self.class_vector.clamp(0, 1)
         noise_t = self.noise_t.clamp(-truncation, truncation)
-        return torch.cat([noise_t.squeeze(), stack.gan.embeddings(class_vector)
-                          ])
+        return torch.cat([noise_t.squeeze(), self.class_vector])
+
+
+class ChannelActivationWithClassRegularization(torch.nn.Module):
+    def __init__(self,
+                 input_parametizer: SimpleInputParametizer,
+                 target: torch.nn.Module, channel: int,
+                 reg: float):
+        super(ChannelActivationWithClassRegularization, self).__init__()
+        self.reg = reg
+        self.target = target
+        self.channel = channel
+        self.input_parametizer = input_parametizer
+        self.loss_fn = optimviz.loss.ChannelActivation(target, channel)
+        self.regularization = torch.nn.L1Loss()
+
+    def forward(self, mappings):
+        x = self.loss_fn(mappings)
+        # Apply L2 regularization, but such that higher L2s are better
+        x += self.reg * torch.sum(self.input_parametizer.class_vector ** 2)
+
+        return x
 
 
 def max_loss_summarize(loss_value: torch.Tensor):
     return -1 * loss_value.max()
 
 
-def create_optimized_image(target: torch.nn.Module, channel: int, n_steps: int, lr: float = 0.025, verbose: bool = True) -> torch.Tensor:
+def create_optimized_image(target: torch.nn.Module, channel: int, n_steps: int,
+                           lr: float, reg: float,
+                           verbose: bool = True) -> torch.Tensor:
     """
     :returns: (1, 256) input ready for biggan insertion, loss_history
     """
     input = SimpleInputParametizer()
-    loss_fn = optimviz.loss.ChannelActivation(target, channel)
+    loss_fn = ChannelActivationWithClassRegularization(
+        input, target, channel, reg)
     io = optimviz.InputOptimization(
         stack, loss_fn, input, torch.nn.Identity())
-    print("Running optim with lr =", lr)
+    print("Running optim with lr", lr, "reg", reg)
     history = io.optimize(optimviz.optimization.n_steps(
         n_steps, verbose), optimizer=torch.optim.Adam(io.parameters(), lr=lr))  # , loss_summarize_fn=max_loss_summarize)
 
-    return input.forward(), history, input.class_vector
+    print("L2 of class vector =",
+          torch.sum(input.class_vector ** 2))
+
+    return input.forward(), history, input.class_vector.detach()
 
 
 def display_optimized_image(vec: torch.Tensor):
