@@ -14,26 +14,21 @@ from IPython.display import clear_output
 # np.random.seed(1337)
 # random.seed(1337)
 
-truncation = 0.4
-
-# A very basic class that just wraps a single noise vector
-
-
-# Literally just a stack of alexnet and biggan on top of each other
+truncation = 1
 
 
 class GANStack(torch.nn.Module):
     def __init__(self, gan, model):
         super(GANStack, self).__init__()
         self.gan = gan
-        # self.regularization = torch.nn.Sequential(
-        #     # torch.nn.ReflectionPad2d(4),
-        #     optimviz.transforms.RandomSpatialJitter(8),
-        #     optimviz.transforms.RandomScale(
-        #         scale=(1, 0.975, 1.025, 0.95, 1.05)),
-        #     torchvision.transforms.RandomRotation(degrees=(-5, 5)),
-        #     optimviz.transforms.RandomSpatialJitter(2),
-        # )
+        self.regularization = torch.nn.Sequential(
+            torch.nn.ReflectionPad2d(4),
+            optimviz.transforms.RandomSpatialJitter(8),
+            optimviz.transforms.RandomScale(
+                scale=(1, 0.975, 1.025, 0.95, 1.05)),
+            torchvision.transforms.RandomRotation(degrees=(-5, 5)),
+            optimviz.transforms.RandomSpatialJitter(2),
+        )
         self.convert = torchvision.transforms.Compose([
             torchvision.transforms.Resize((224, 224)),
             torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[
@@ -50,7 +45,7 @@ class GANStack(torch.nn.Module):
         # We need to transform this with InceptionV1's transforms
         x = ((x + 1.0) / 2.0 * 256)  # Convert to 0-255
         x = self.convert(x)
-        # x = self.regularization(x)
+        x = self.regularization(x)
         x = self.model(x)
 
         self.steps += 1
