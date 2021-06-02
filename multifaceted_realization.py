@@ -1,3 +1,4 @@
+from lib2to3.pytree import convert
 from biggan import model as biggan
 from inceptionv1 import model as inceptionv1
 import torch
@@ -9,17 +10,16 @@ import captum.attr as attr
 import PIL
 import numpy as np
 from IPython.display import clear_output
+from resnet import resnet18
 
-import torchvision.models as models
 from torchvision import transforms
-resnet18 = models.resnet18(pretrained=True)
 
 # Fix the random seed
 # torch.manual_seed(1337)
 # np.random.seed(1337)
 # random.seed(1337)
 
-truncation = 0.4
+truncation = 1
 
 
 # A very basic class that just wraps a single noise vector
@@ -49,8 +49,8 @@ class GANStack(torch.nn.Module):
         self.steps = 0
 
     def forward(self, x):
-        if self.steps % 2 == 0:
-            pass  # display_optimized_image(x)
+        if self.steps % 100 == 0:
+            display_optimized_image(x)
         x = self.gan.generator(x, truncation=truncation)
         # Gan output has 1x1x256x256, with values between -1 and 1
         # We need to transform this with InceptionV1's transforms
@@ -84,57 +84,59 @@ class SimpleInputParametizer(torch.nn.Module):
         noise_t = self.noise_t.clamp(-truncation, truncation)
         return torch.cat([noise_t.squeeze(), self.class_vector])
 
+
 class ResNetEmbedding(torch.nn.Module):
     def __init__(self):
         super(ResNetEmbedding, self).__init__()
-        resnet18.eval()
-        self.ResNetEmbedding = attr.LayerActivation(resnet18, resnet18.avgpool)
         self.preprocess = transforms.Compose([
-            # transforms.ToPILImage(),
             transforms.Resize(256),
             transforms.CenterCrop(224),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[
+                                 0.229, 0.224, 0.225]),
         ])
 
     def forward(self, x):
-        y = self.preprocess(x).reshape((1, 3, 224, 224))
-        
-        z = self.ResNetEmbedding.attribute(y)
-        print(z.shape)
-        return z
+        x = self.preprocess(x)
+        x = resnet18(x)
+        return x
+
 
 class ChannelActivationWithSimilarity(torch.nn.Module):
     def __init__(self,
                  input_parametizer: SimpleInputParametizer,
                  target: torch.nn.Module, channel: int,
-                 input_embed: torch.Tensor,
-                 img_embed: torch.Tensor,
+                 img: torch.Tensor,
                  anchor: float):
         super(ChannelActivationWithSimilarity, self).__init__()
         self.anchor = anchor
         self.target = target
         self.channel = channel
-        self.input_parametizer = input_parametizer
-        self.input_embed = input_embed
-        self.img_embed = img_embed
+        self.input = input_parametizer
+        self.img = transforms.ToTensor()(img)
+        self.img = self.img.reshape(1, *self.img.shape).to("cuda")
         self.loss_fn = optimviz.loss.ChannelActivation(target, channel)
+        self.resnet_embedding = ResNetEmbedding()
+        self.steps = 0
 
-    def similarity(self, mappings):
-        return torch.dot(self.input_embed, self.img_embed)/ (torch.norm(self.input_embed) * torch.norm(self.img_embed))
+    def similarity(self):
+        gan_img = (stack.gan.generator(
+            self.input(), truncation=truncation))
+        # Convert to 0-255
+        gan_img = ((gan_img + 1.0) / 2.0 * 256)
+
+        x = self.resnet_embedding.forward(gan_img).reshape(-1)
+        y = self.resnet_embedding.forward(self.img).reshape(-1)
+        return torch.dot(x, y) / (torch.norm(x) * torch.norm(y))
 
     def forward(self, mappings):
         x = self.loss_fn(mappings)
         # Add similarity score to img
-        similarity = similarity(self, mappings)
+        similarity = self.similarity()
+        if self.steps % 10 == 0:
+            print(similarity)
         x += self.anchor * similarity
+        self.steps += 1
         return x
-    
-
-
-
-def max_loss_summarize(loss_value: torch.Tensor):
-    return -1 * loss_value.max()
 
 
 def create_optimized_image(target: torch.nn.Module, img: torch.Tensor, channel: int, n_steps: int, lr: float = 0.025, anchor: float = 1.0, verbose: bool = True) -> torch.Tensor:
@@ -144,21 +146,15 @@ def create_optimized_image(target: torch.nn.Module, img: torch.Tensor, channel: 
     input = SimpleInputParametizer()
 
     # Calculating how close the images are
-    resnet_embedding = ResNetEmbedding()
-    gan_img = input_to_img(input())
-    x = resnet_embedding.forward(gan_img).reshape(-1)
-    y = resnet_embedding.forward(img).reshape(-1)
-    
-
-    loss_fn = optimviz.loss.ChannelActivationWithSimilarity(input, target, channel, x, y, anchor)
-
+    loss_fn = ChannelActivationWithSimilarity(
+        input, target, channel, img, anchor)
     io = optimviz.InputOptimization(
         stack, loss_fn, input, torch.nn.Identity())
     print("Running optim with lr =", lr)
     history = io.optimize(optimviz.optimization.n_steps(
         n_steps, verbose), optimizer=torch.optim.Adam(io.parameters(), lr=lr))  # , loss_summarize_fn=max_loss_summarize)
 
-    return input.forward(), history, input.class_vector, similarity
+    return input.forward(), history, input.class_vector
 
 
 def display_optimized_image(vec: torch.Tensor):

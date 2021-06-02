@@ -9,7 +9,7 @@ def vis_neuron(
     model: torch.nn.Module, target: torch.nn.Module, channel: int
 ) -> torch.Tensor:
     image = optimviz.images.NaturalImage((224, 224)).to("cuda")
-    loss_fn = optimviz.loss.NeuronActivation(target, channel)
+    loss_fn = optimviz.loss.ChannelActivation(target, channel)
     transforms = torch.nn.Sequential(
         torch.nn.ReflectionPad2d(4),
         optimviz.transforms.RandomSpatialJitter(8),
@@ -32,11 +32,11 @@ for i in range(0, 50):
     while True:
         print("Optimizing", i)
         image, history = vis_neuron(
-            model, model.inception5b.branch4[1].conv, i)
+            model, model.fc, i)
         if history[-1] < -1:
             break
     torchvision.transforms.ToPILImage()(image().squeeze()).save(
-        f"out/featurevis-chan-{str(i)}.png")
+        f"outputs/featurevis-fc/featurevis-chan-{str(i)}.png")
     histories.append(history.cpu().detach().numpy())
 
 

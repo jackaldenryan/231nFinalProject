@@ -22,6 +22,7 @@ nltk = "^3.6.2"
 captum = { path = "./captum", develop = true }
 seaborn = "^0.11.1"
 pytorch-fid = "^0.2.0"
+natsort = "^7.1.1"
 
 [tool.poetry.dev-dependencies]
 
