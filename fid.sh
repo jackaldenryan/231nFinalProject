@@ -1,3 +1,3 @@
 #!/bin/sh
 
-pytorch-fid outputs/featurevis-fc /datasets/imagenet/val-onedir
+pytorch-fid outputs/imagenet-activation-analysis/onedir /datasets/imagenet/val-onedir
